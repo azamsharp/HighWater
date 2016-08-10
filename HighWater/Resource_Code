@@ -1,0 +1,123 @@
+//
+//  UpgradesTableViewController.swift
+//  HighWater
+//
+//  Created by Mohammad Azam on 8/9/16.
+//  Copyright © 2016 Mohammad Azam. All rights reserved.
+//
+
+import UIKit
+import StoreKit
+
+class UpgradesTableViewController: UITableViewController, SKProductsRequestDelegate, SKPaymentTransactionObserver {
+
+private var productId = "HighWatersProVersion"
+private var productIds = [String]()
+
+private var products :[SKProduct]!
+
+override func viewDidLoad() {
+
+super.viewDidLoad()
+
+productIds.append(productId)
+self.products = [SKProduct]()
+
+SKPaymentQueue.defaultQueue().addTransactionObserver(self)
+
+requestProductInformation()
+}
+
+private func requestProductInformation() {
+
+if SKPaymentQueue.canMakePayments() {
+
+let productIdentifiers = NSSet(array: self.productIds) as! Set<String>
+
+let productRequest = SKProductsRequest(productIdentifiers: productIdentifiers)
+
+productRequest.delegate = self
+productRequest.start()
+}
+}
+
+func paymentQueue(queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+
+for transaction in transactions {
+
+switch transaction.transactionState {
+case .Purchased:
+print("purchased")
+
+SKPaymentQueue.defaultQueue().finishTransaction(transaction)
+
+case .Failed:
+print("failed")
+
+// take appropriate action
+
+SKPaymentQueue.defaultQueue().finishTransaction(transaction)
+
+default:
+print("default")
+
+SKPaymentQueue.defaultQueue().finishTransaction(transaction)
+}
+}
+
+}
+
+func productsRequest(request: SKProductsRequest, didReceiveResponse response: SKProductsResponse) {
+
+if response.products.count != 0 {
+for product in response.products {
+self.products.append(product)
+}
+} else {
+print("There are no products")
+}
+
+// refresh the table view
+self.tableView.reloadData()
+}
+
+override func didReceiveMemoryWarning() {
+super.didReceiveMemoryWarning()
+// Dispose of any resources that can be recreated.
+}
+
+// MARK: - Table view data source
+
+override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+// #warning Incomplete implementation, return the number of sections
+return 1
+}
+
+override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+// #warning Incomplete implementation, return the number of rows
+return self.products.count
+}
+
+override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+
+let cell = tableView.dequeueReusableCellWithIdentifier("ProductCell", forIndexPath: indexPath)
+
+let product = self.products[indexPath.row]
+
+cell.textLabel!.text = product.localizedTitle
+cell.detailTextLabel?.text = product.localizedDescription
+
+return cell
+}
+
+@IBAction func buyButtonPressed() {
+
+guard let product = self.products.first else {
+fatalError("Product not found")
+}
+
+let payment = SKPayment(product: product)
+SKPaymentQueue.defaultQueue().addPayment(payment)
+}
+
+}
